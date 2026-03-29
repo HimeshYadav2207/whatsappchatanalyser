@@ -1,174 +1,11 @@
 import streamlit as st
-import chat,helper
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-
-st.sidebar.title("Whatsapp Chat Analyzer")
-
-uploaded_file = st.sidebar.file_uploader("Choose a file")
-if uploaded_file is not None:
-    bytes_data = uploaded_file.getvalue()
-    data = bytes_data.decode("utf-8")
-    df = chat.chat(data)
-
-    # fetch unique users
-    user_list = df['user'].unique().tolist()
-    if 'group_notification' in user_list:
-        user_list.remove('group_notification')
-        user_list.sort()
-        user_list.insert(0,"Overall")
-
-    selected_user = st.sidebar.selectbox("Show analysis wrt",user_list)
-
-    if st.sidebar.button("Show Analysis"):
-
-        # Stats Area
-        num_messages, words, num_media_messages, num_links = helper.fetch_stats(selected_user,df)
-        st.title("Top Statistics")
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            st.header("Total Messages")
-            st.title(num_messages)
-        with col2:
-            st.header("Total Words")
-            st.title(words)
-        with col3:
-            st.header("Media Shared")
-            st.title(num_media_messages)
-        with col4:
-            st.header("Links Shared")
-            st.title(num_links)
-
-        # monthly timeline
-        st.title("Monthly Timeline")
-        timeline = helper.monthly_timeline(selected_user,df)
-        fig,ax = plt.subplots()
-        ax.plot(timeline['time'], timeline['message'],color='green')
-        plt.xticks(rotation='vertical')
-        st.pyplot(fig)
-
-        # daily timeline
-        st.title("Daily Timeline")
-        daily_timeline = helper.daily_timeline(selected_user, df)
-        fig, ax = plt.subplots()
-        ax.plot(daily_timeline['only_date'], daily_timeline['message'], color='black')
-        plt.xticks(rotation='vertical')
-        st.pyplot(fig)
-
-        # activity map
-        st.title('Activity Map')
-        col1,col2 = st.columns(2)
-
-        with col1:
-            st.header("Most busy day")
-            busy_day = helper.week_activity_map(selected_user,df)
-            fig,ax = plt.subplots()
-            ax.bar(busy_day.index,busy_day.values,color='purple')
-            plt.xticks(rotation='vertical')
-            st.pyplot(fig)
-
-        with col2:
-            st.header("Most busy month")
-            busy_month = helper.month_activity_map(selected_user, df)
-            fig, ax = plt.subplots()
-            ax.bar(busy_month.index, busy_month.values,color='orange')
-            plt.xticks(rotation='vertical')
-            st.pyplot(fig)
-
-        st.title("Weekly Activity Map")
-        user_heatmap = helper.activity_heatmap(selected_user,df)
-        fig,ax = plt.subplots()
-        ax = sns.heatmap(user_heatmap)
-        st.pyplot(fig)
-
-        # finding the busiest users in the group(Group level)
-        if selected_user == 'Overall':
-            st.title('Most Busy Users')
-            x,new_df = helper.most_busy_users(df)
-            fig, ax = plt.subplots()
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                ax.bar(x.index, x.values,color='red')
-                plt.xticks(rotation='vertical')
-                st.pyplot(fig)
-            with col2:
-                st.dataframe(new_df)
-
-        # WordCloud
-        st.title("Wordcloud")
-        df_wc = helper.create_wordcloud(selected_user,df)
-        fig,ax = plt.subplots()
-        ax.imshow(df_wc)
-        st.pyplot(fig)
-
-        # most common words
-        most_common_df = helper.most_common_words(selected_user,df)
-
-        fig,ax = plt.subplots()
-
-        ax.barh(most_common_df[0],most_common_df[1])
-        plt.xticks(rotation='vertical')
-
-        st.title('Most commmon words')
-        st.pyplot(fig)
-
-        # emoji analysis
-        emoji_df = helper.emoji_helper(selected_user,df)
-        st.title("Emoji Analysis")
-
-        col1,col2 = st.columns(2)
-
-        with col1:
-            st.dataframe(emoji_df)
-        with col2:
-            fig,ax = plt.subplots()
-            ax.pie(emoji_df[1].head(),labels=emoji_df[0].head(),autopct="%0.2f")
-            st.pyplot(fig)
-
-
-
-
+import emoji
 from textblob import TextBlob
-
-def generate_local_summary(df):
-    summary = []
-
-    # total messages
-    total_msgs = df.shape[0]
-    summary.append(f"Total messages exchanged: {total_msgs}")
-
-    # most active user
-    most_active = df['user'].value_counts().idxmax()
-    summary.append(f"Most active user: {most_active}")
-
-    # sentiment
-    sentiments = df['message'].apply(lambda x: TextBlob(str(x)).sentiment.polarity)
-    avg_sentiment = sentiments.mean()
-
-    if avg_sentiment > 0:
-        mood = "positive 😊"
-    elif avg_sentiment < 0:
-        mood = "negative 😐"
-    else:
-        mood = "neutral 😶"
-
-    summary.append(f"Overall conversation mood is {mood}")
-
-    # peak hour
-    peak_hour = df['hour'].value_counts().idxmax()
-    summary.append(f"Most active hour: {peak_hour}:00")
-
-    # common words
-    words = " ".join(df['message'].dropna()).lower().split()
-    common_words = pd.Series(words).value_counts().head(5).index.tolist()
-    summary.append(f"Most common words: {', '.join(common_words)}")
-
-    return summary
-
+import chat
+import helper
 
 # Page config
 st.set_page_config(page_title="Chat Analyzer", page_icon="💬", layout="wide")
@@ -176,42 +13,63 @@ st.set_page_config(page_title="Chat Analyzer", page_icon="💬", layout="wide")
 st.title("💬 WhatsApp Chat Analyzer")
 st.write("UPDATED VERSION 🚀")
 
-# Upload file
-uploaded_file = st.file_uploader("Upload your chat file")
+# Sidebar
+st.sidebar.title("Whatsapp Chat Analyzer")
+uploaded_file = st.sidebar.file_uploader("Choose a file")
 
 if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+    data = uploaded_file.read().decode("utf-8")
+    df = chat.chat(data)
 
-    # Sidebar menu
+    # Users
+    user_list = df['user'].unique().tolist()
+    if 'group_notification' in user_list:
+        user_list.remove('group_notification')
+
+    user_list.sort()
+    user_list.insert(0, "Overall")
+
+    selected_user = st.sidebar.selectbox("Show analysis wrt", user_list)
     option = st.sidebar.selectbox("Menu", ["Analysis", "Fun Insights", "Summary"])
 
     # ---------------- ANALYSIS ----------------
     if option == "Analysis":
-        st.header("📊 Chat Analysis")
+        if st.sidebar.button("Show Analysis"):
 
-        st.write("Total Messages:", df.shape[0])
+            num_messages, words, num_media_messages, num_links = helper.fetch_stats(selected_user, df)
 
-        # Most active user
-        st.subheader("Most Active User")
-        st.write(df['user'].value_counts().idxmax())
+            st.title("Top Statistics")
+            col1, col2, col3, col4 = st.columns(4)
 
-        # Messages over time
-        st.subheader("Messages Over Time")
-        st.line_chart(df['message'].value_counts())
+            col1.metric("Messages", num_messages)
+            col2.metric("Words", words)
+            col3.metric("Media", num_media_messages)
+            col4.metric("Links", num_links)
+
+            # Timeline
+            timeline = helper.monthly_timeline(selected_user, df)
+            fig, ax = plt.subplots()
+            ax.plot(timeline['time'], timeline['message'])
+            plt.xticks(rotation='vertical')
+            st.pyplot(fig)
+
+            # Heatmap
+            st.title("Activity Heatmap")
+            user_heatmap = helper.activity_heatmap(selected_user, df)
+            fig, ax = plt.subplots()
+            sns.heatmap(user_heatmap)
+            st.pyplot(fig)
 
     # ---------------- FUN INSIGHTS ----------------
     elif option == "Fun Insights":
         st.header("😂 Fun Insights")
 
-        # Dry texter
         avg_length = df.groupby('user')['message'].apply(lambda x: x.str.len().mean())
         st.write("😐 Dry texter:", avg_length.idxmin())
 
-        # Emoji count
         emoji_count = sum([1 for msg in df['message'] for c in str(msg) if c in emoji.EMOJI_DATA])
         st.write("😂 Total Emojis:", emoji_count)
 
-        # Friendship score
         score = min(100, len(df) // 10)
         st.write(f"💙 Friendship Score: {score}/100")
 
@@ -220,13 +78,6 @@ if uploaded_file is not None:
         st.header("🤖 Chat Summary")
 
         if st.button("Generate AI Summary"):
-            summary = []
-
-            total_msgs = df.shape[0]
-            summary.append(f"Total messages: {total_msgs}")
-
-            most_active = df['user'].value_counts().idxmax()
-            summary.append(f"Most active user: {most_active}")
 
             sentiments = df['message'].apply(lambda x: TextBlob(str(x)).sentiment.polarity)
             avg_sentiment = sentiments.mean()
@@ -238,12 +89,13 @@ if uploaded_file is not None:
             else:
                 mood = "neutral 😶"
 
-            summary.append(f"Overall mood is {mood}")
+            most_active = df['user'].value_counts().idxmax()
 
-            st.write(" ".join(summary))
-
-
-
+            st.write(
+                f"This chat contains {len(df)} messages. "
+                f"The most active user is {most_active}. "
+                f"The overall mood is {mood}."
+            )
 
 
 
