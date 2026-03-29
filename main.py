@@ -60,6 +60,42 @@ if uploaded_file is not None:
             sns.heatmap(user_heatmap)
             st.pyplot(fig)
 
+            # WordCloud
+            st.subheader("☁️ Wordcloud")
+            df_wc = helper.create_wordcloud(selected_user, df)
+
+            fig, ax = plt.subplots()
+            ax.imshow(df_wc)
+            ax.axis("off")
+            st.pyplot(fig)
+
+            # Most common words
+            st.subheader("📊 Most Common Words")
+            most_common_df = helper.most_common_words(selected_user, df)
+
+            fig, ax = plt.subplots()
+            ax.barh(most_common_df[0], most_common_df[1])
+            ax.set_xlabel("Frequency")
+            st.pyplot(fig)
+
+            # Emoji analysis
+            st.subheader("😂 Emoji Analysis")
+            emoji_df = helper.emoji_helper(selected_user, df)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.dataframe(emoji_df)
+
+            with col2:
+                fig, ax = plt.subplots()
+                ax.pie(
+                    emoji_df[1].head(),
+                    labels=emoji_df[0].head(),
+                    autopct="%0.2f"
+                )
+                st.pyplot(fig)
+
     # ---------------- FUN INSIGHTS ----------------
     elif option == "Fun Insights":
         st.header("😂 Fun Insights")
