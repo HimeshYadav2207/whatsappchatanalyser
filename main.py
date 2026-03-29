@@ -170,6 +170,79 @@ def generate_local_summary(df):
     return summary
 
 
+# Page config
+st.set_page_config(page_title="Chat Analyzer", page_icon="💬", layout="wide")
+
+st.title("💬 WhatsApp Chat Analyzer")
+st.write("UPDATED VERSION 🚀")
+
+# Upload file
+uploaded_file = st.file_uploader("Upload your chat file")
+
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+
+    # Sidebar menu
+    option = st.sidebar.selectbox("Menu", ["Analysis", "Fun Insights", "Summary"])
+
+    # ---------------- ANALYSIS ----------------
+    if option == "Analysis":
+        st.header("📊 Chat Analysis")
+
+        st.write("Total Messages:", df.shape[0])
+
+        # Most active user
+        st.subheader("Most Active User")
+        st.write(df['user'].value_counts().idxmax())
+
+        # Messages over time
+        st.subheader("Messages Over Time")
+        st.line_chart(df['message'].value_counts())
+
+    # ---------------- FUN INSIGHTS ----------------
+    elif option == "Fun Insights":
+        st.header("😂 Fun Insights")
+
+        # Dry texter
+        avg_length = df.groupby('user')['message'].apply(lambda x: x.str.len().mean())
+        st.write("😐 Dry texter:", avg_length.idxmin())
+
+        # Emoji count
+        emoji_count = sum([1 for msg in df['message'] for c in str(msg) if c in emoji.EMOJI_DATA])
+        st.write("😂 Total Emojis:", emoji_count)
+
+        # Friendship score
+        score = min(100, len(df) // 10)
+        st.write(f"💙 Friendship Score: {score}/100")
+
+    # ---------------- SUMMARY ----------------
+    elif option == "Summary":
+        st.header("🤖 Chat Summary")
+
+        if st.button("Generate AI Summary"):
+            summary = []
+
+            total_msgs = df.shape[0]
+            summary.append(f"Total messages: {total_msgs}")
+
+            most_active = df['user'].value_counts().idxmax()
+            summary.append(f"Most active user: {most_active}")
+
+            sentiments = df['message'].apply(lambda x: TextBlob(str(x)).sentiment.polarity)
+            avg_sentiment = sentiments.mean()
+
+            if avg_sentiment > 0:
+                mood = "positive 😊"
+            elif avg_sentiment < 0:
+                mood = "negative 😐"
+            else:
+                mood = "neutral 😶"
+
+            summary.append(f"Overall mood is {mood}")
+
+            st.write(" ".join(summary))
+
+
 
 
 
