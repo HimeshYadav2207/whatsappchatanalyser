@@ -36,6 +36,20 @@ if uploaded_file is not None:
     if option == "Analysis":
         if st.sidebar.button("Show Analysis"):
 
+            # ----------- CHAT TABLE (NEW FEATURE) -----------
+            st.subheader("📋 Chat Data Table")
+
+            search = st.text_input("🔍 Search message")
+            limit = st.slider("Select number of messages", 10, 500, 100)
+
+            if search:
+                filtered_df = df[df['message'].str.contains(search, case=False, na=False)]
+            else:
+                filtered_df = df
+
+            st.dataframe(filtered_df[['date', 'time', 'user', 'message']].head(limit))
+
+            # ----------- STATS -----------
             num_messages, words, num_media_messages, num_links = helper.fetch_stats(selected_user, df)
 
             st.title("Top Statistics")
@@ -46,21 +60,22 @@ if uploaded_file is not None:
             col3.metric("Media", num_media_messages)
             col4.metric("Links", num_links)
 
-            # Timeline
+            # ----------- TIMELINE -----------
+            st.subheader("📈 Monthly Timeline")
             timeline = helper.monthly_timeline(selected_user, df)
             fig, ax = plt.subplots()
             ax.plot(timeline['time'], timeline['message'])
             plt.xticks(rotation='vertical')
             st.pyplot(fig)
 
-            # Heatmap
-            st.title("Activity Heatmap")
+            # ----------- HEATMAP -----------
+            st.subheader("🔥 Activity Heatmap")
             user_heatmap = helper.activity_heatmap(selected_user, df)
             fig, ax = plt.subplots()
             sns.heatmap(user_heatmap)
             st.pyplot(fig)
 
-            # WordCloud
+            # ----------- WORDCLOUD -----------
             st.subheader("☁️ Wordcloud")
             df_wc = helper.create_wordcloud(selected_user, df)
 
@@ -69,7 +84,7 @@ if uploaded_file is not None:
             ax.axis("off")
             st.pyplot(fig)
 
-            # Most common words
+            # ----------- MOST COMMON WORDS -----------
             st.subheader("📊 Most Common Words")
             most_common_df = helper.most_common_words(selected_user, df)
 
@@ -78,7 +93,7 @@ if uploaded_file is not None:
             ax.set_xlabel("Frequency")
             st.pyplot(fig)
 
-            # Emoji analysis
+            # ----------- EMOJI ANALYSIS -----------
             st.subheader("😂 Emoji Analysis")
             emoji_df = helper.emoji_helper(selected_user, df)
 
