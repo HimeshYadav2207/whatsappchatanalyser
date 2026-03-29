@@ -3,6 +3,7 @@ import chat,helper
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 st.sidebar.title("Whatsapp Chat Analyzer")
 
 uploaded_file = st.sidebar.file_uploader("Choose a file")
@@ -129,6 +130,44 @@ if uploaded_file is not None:
             st.pyplot(fig)
 
 
+
+
+from textblob import TextBlob
+
+def generate_local_summary(df):
+    summary = []
+
+    # total messages
+    total_msgs = df.shape[0]
+    summary.append(f"Total messages exchanged: {total_msgs}")
+
+    # most active user
+    most_active = df['user'].value_counts().idxmax()
+    summary.append(f"Most active user: {most_active}")
+
+    # sentiment
+    sentiments = df['message'].apply(lambda x: TextBlob(str(x)).sentiment.polarity)
+    avg_sentiment = sentiments.mean()
+
+    if avg_sentiment > 0:
+        mood = "positive 😊"
+    elif avg_sentiment < 0:
+        mood = "negative 😐"
+    else:
+        mood = "neutral 😶"
+
+    summary.append(f"Overall conversation mood is {mood}")
+
+    # peak hour
+    peak_hour = df['hour'].value_counts().idxmax()
+    summary.append(f"Most active hour: {peak_hour}:00")
+
+    # common words
+    words = " ".join(df['message'].dropna()).lower().split()
+    common_words = pd.Series(words).value_counts().head(5).index.tolist()
+    summary.append(f"Most common words: {', '.join(common_words)}")
+
+    return summary
 
 
 
