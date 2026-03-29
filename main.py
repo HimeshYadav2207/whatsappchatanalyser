@@ -39,10 +39,6 @@ if uploaded_file is not None:
             # ----------- CHAT TABLE-----------
             st.subheader("📋 Chat Data Table")
 
-            # create date & time from datetime
-            df['date'] = df['date_time'].dt.date
-            df['time'] = df['date_time'].dt.time
-
             search = st.text_input("🔍 Search message")
             limit = st.slider("Select number of messages", 10, 500, 100)
 
@@ -51,7 +47,11 @@ if uploaded_file is not None:
             else:
                 filtered_df = df
 
-            st.dataframe(filtered_df[['date', 'time', 'user', 'message']].head(limit))
+            # show only existing columns safely
+            cols = ['date', 'time', 'user', 'message']
+            cols = [col for col in cols if col in df.columns]
+
+            st.dataframe(filtered_df[cols].head(limit))
             # ----------- STATS -----------
             num_messages, words, num_media_messages, num_links = helper.fetch_stats(selected_user, df)
 
